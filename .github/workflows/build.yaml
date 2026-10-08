@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up pnpm and install dependencies
         uses: ./.github/actions/pnpm-setup
@@ -45,15 +45,13 @@ jobs:
         uses: ./.github/actions/build-app
 
       - name: Run unit tests
-        run: TZ=UTC ./node_modules/.bin/nx run-many --target=test --code-coverage --runInBand --silent
+        run: pnpm test:all
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
       - name: Run mocked E2E tests
-        run: |
-          mkdir -p apps/e2e/.auth
-          npx playwright test -c apps/e2e/playwright.config.ts --project me2e
+        run: pnpm me2e
 
       - name: Extract version from branch
         id: version

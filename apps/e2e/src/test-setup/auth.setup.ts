@@ -11,8 +11,9 @@ const authDisabled: boolean = /none/.test(process.env.FXN_AUTH_STRATEGY ?? 'none
 
 setup('Create Designer User Auth', async ({ page }) => {
   const loginPage = new LoginPage(page);
+  const usr = `${process.env.FXN_DESIGNER_USR}@fmr.com`;
   const creds: any = {
-    usr: process.env.FXN_DESIGNER_USR,
+    usr,
     psw: process.env.FXN_DESIGNER_PSW,
   };
 
@@ -24,8 +25,9 @@ setup('Create Designer User Auth', async ({ page }) => {
 
 setup('Create Support User Auth', async ({ page }) => {
   const loginPage = new LoginPage(page);
+  const usr = `${process.env.FXN_SUPPORT_USR}@fmr.com`;
   const creds: any = {
-    usr: process.env.FXN_SUPPORT_USR,
+    usr,
     psw: process.env.FXN_SUPPORT_PSW,
   };
 
@@ -42,8 +44,9 @@ setup('Create Plat Read Auth', async ({ page }) => {
   );
 
   const loginPage = new LoginPage(page);
+  const usr = `${process.env.FXN_PLAT_READ_USR}@fmr.com`;
   const creds: any = {
-    usr: process.env.FXN_PLAT_READ_USR,
+    usr,
     psw: process.env.FXN_PLAT_READ_PSW,
   };
 

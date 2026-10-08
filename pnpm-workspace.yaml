@@ -9,6 +9,7 @@ allowBuilds:
   lmdb: true
   msgpackr-extract: true
   nx: true
+  playwright: true
   protobufjs: true
   puppeteer: true
   unrs-resolver: true
