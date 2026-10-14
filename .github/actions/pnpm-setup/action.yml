@@ -1,15 +1,19 @@
 name: 'pnpm Setup'
-description: 'Sets up Node.js and pnpm with caching'
+description: 'Installs pnpm and project dependencies using the Node.js version from package.json'
 
 runs:
   using: 'composite'
   steps:
-    - name: Set up Node.js and pnpm
-      uses: pnpm/setup@v1
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
       with:
-        runtime: node@24
-        install: false
-        cache: true
+        node-version-file: package.json
+
+    - name: Install pnpm
+      shell: bash
+      run: |
+        npm install --global --prefix "$RUNNER_TEMP/pnpm" --no-audit --no-fund "$(node -p "require('./package.json').packageManager")"
+        echo "$RUNNER_TEMP/pnpm/bin" >> "$GITHUB_PATH"
 
     - name: Install dependencies
       shell: bash
@@ -18,5 +22,5 @@ runs:
     - name: Show versions
       shell: bash
       run: |
-        node --version
-        pnpm --version
+        echo "Node Version: $(node --version)"
+        echo "Pnpm Version: $(pnpm --version)"
