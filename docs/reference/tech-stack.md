@@ -69,15 +69,15 @@ fluxnova-control-center/
 
 ### Data Visualisation & Process Modelling
 
-| Library                                                                                             | Version     | Purpose                                                             |
-| --------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------- |
-| [AG Grid](https://www.ag-grid.com)                                                                  | ~34.3       | High-performance data grid (`ag-grid-angular`, `ag-grid-community`) |
-| [bpmn-js](https://bpmn.io/toolkit/bpmn-js/)                                                         | ^18.12      | BPMN 2.0 process diagram viewer/editor                              |
-| [dmn-js](https://bpmn.io/toolkit/dmn-js/)                                                           | ^17.6       | DMN decision table viewer/editor                                    |
-| [diagram-js](https://github.com/bpmn-io/diagram-js)                                                 | ^15.9       | Underlying diagramming toolkit                                      |
-| [ApexCharts](https://apexcharts.com) / [ng-apexcharts](https://github.com/apexcharts/ng-apexcharts) | ^5.2 / ^2.0 | Charts and graphs                                                   |
-| [Monaco Editor](https://microsoft.github.io/monaco-editor/)                                         | ^0.55       | In-browser code editor                                              |
-| [visual-heatmap](https://github.com/nswamy14/visual-heatmap)                                        | ^2.2        | Heatmap visualisations                                              |
+| Library                                                                                          | Version     | Purpose                                                             |
+| ------------------------------------------------------------------------------------------------ | ----------- | ------------------------------------------------------------------- |
+| [AG Grid](https://www.ag-grid.com)                                                               | ~34.3       | High-performance data grid (`ag-grid-angular`, `ag-grid-community`) |
+| [bpmn-js](https://bpmn.io/toolkit/bpmn-js/)                                                      | ^18.12      | BPMN 2.0 process diagram viewer/editor                              |
+| [dmn-js](https://bpmn.io/toolkit/dmn-js/)                                                        | ^17.6       | DMN decision table viewer/editor                                    |
+| [diagram-js](https://github.com/bpmn-io/diagram-js)                                              | ^15.9       | Underlying diagramming toolkit                                      |
+| [Chart.js](https://www.chartjs.org) / [ng2-charts](https://github.com/valor-software/ng2-charts) | ^4.5 / ^8.0 | Charts and graphs                                                   |
+| [Monaco Editor](https://microsoft.github.io/monaco-editor/)                                      | ^0.55       | In-browser code editor                                              |
+| [visual-heatmap](https://github.com/nswamy14/visual-heatmap)                                     | ^2.2        | Heatmap visualisations                                              |
 
 ### Build
 
