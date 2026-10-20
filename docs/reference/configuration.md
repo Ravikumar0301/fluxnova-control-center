@@ -106,12 +106,27 @@ The following environment variables are available:
   - description: The URL to redirect to for authentication
   - required?: yes (when `FXN_AUTH_STRATEGY` is "oidc")
   - example: "https://login.microsoftonline.com/<REALM/TENANT>/oauth2/v2.0/authorize"
+- `FXN_OIDC_CLIENT_AUTH_METHOD`
+  - description: Client authentication method for OIDC token requests. `FXN_AUTH_STRATEGY` must be set to "oidc" to enable OIDC authentication.
+  - required?: no
+  - valid values: "client_secret" | "private_key_jwt"
+  - default: "client_secret"
 - `FXN_OIDC_CLIENT_ID`
   - description: The client ID of the OIDC application.
   - required?: yes (when `FXN_AUTH_STRATEGY` is "oidc")
 - `FXN_OIDC_CLIENT_SECRET`
-  - description: The client secret of the OIDC application.
-  - required?: yes (when `FXN_AUTH_STRATEGY` is "oidc")
+  - description: Client secret for the OIDC application. It is not used in `private_key_jwt` mode.
+  - required?: yes, when `FXN_AUTH_STRATEGY` is "oidc" and `FXN_OIDC_CLIENT_AUTH_METHOD` is "client_secret" or unset.
+- `FXN_OIDC_PRIVATE_KEY`
+  - description: PEM-encoded RSA private key used to sign OIDC client assertions. Supply it through a protected runtime environment or secret manager. Do not commit it, log it, or expose it to the frontend. Normal PEM line endings and escaped `\n` sequences are accepted.
+  - required?: yes, when `FXN_AUTH_STRATEGY` is "oidc" and `FXN_OIDC_CLIENT_AUTH_METHOD` is "private_key_jwt"
+  - key requirements: RSA with a modulus of at least 2048 bits.
+- `FXN_OIDC_PRIVATE_KEY_JWT_ALGORITHM`
+  - description: Signing algorithm for OIDC client assertions. The configured algorithm must be compatible with the private key, its matching registered public certificate, and the Keycloak client policy.
+  - required?: no
+  - valid values: "RS256"
+  - default: "RS256"
+  - applies when: `FXN_AUTH_STRATEGY` is "oidc" and `FXN_OIDC_CLIENT_AUTH_METHOD` is "private_key_jwt"
 - `FXN_OIDC_ISSUER`
   - description: The issuer URL of the OIDC provider
   - required?: yes (when `FXN_AUTH_STRATEGY` is "oidc")

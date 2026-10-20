@@ -3,12 +3,20 @@ import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { AxiosInstance } from 'axios';
 import { beforeEach, describe, expect, it, Mocked, vi } from 'vitest';
+import { generateKeyPairSync } from 'crypto';
+import { decode, JwtPayload, sign as signJwt, verify } from 'jsonwebtoken';
 import { OIDCConfig } from '@fxn/types';
 import { RequestState } from '../../context';
 import { OidcAuthStrategyService } from './oidc.auth-strategy.service';
 import type { Request, Response } from 'express';
 
 vi.mock('@azure/msal-node');
+
+const { privateKey: generatedPrivateKey, publicKey: generatedPublicKey } = generateKeyPairSync('rsa', {
+  modulusLength: 2048,
+});
+const privateKeyPem = generatedPrivateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
+const publicKeyPem = generatedPublicKey.export({ type: 'spki', format: 'pem' }).toString();
 
 describe('OidcAuthStrategyService', () => {
   let axiosInstance: AxiosInstance;
@@ -72,6 +80,12 @@ describe('OidcAuthStrategyService', () => {
   } as unknown as Mocked<Request & { state?: RequestState }>;
 
   beforeEach(async () => {
+    oidcConfig.clientId = undefined;
+    oidcConfig.clientSecret = undefined;
+    oidcConfig.clientAuthMethod = undefined;
+    oidcConfig.clientPrivateKey = undefined;
+    oidcConfig.clientPrivateKeyJwtAlgorithm = undefined;
+
     const moduleRef = await Test.createTestingModule({
       controllers: [],
       providers: [OidcAuthStrategyService, { provide: ConfigService, useValue: mockConfigService }],
@@ -101,6 +115,80 @@ describe('OidcAuthStrategyService', () => {
     expect(JSON.parse(service.msalConfig.auth.authorityMetadata ?? '').issuer).toBe(oidcConfig.issuer);
     expect(JSON.parse(service.msalConfig.auth.authorityMetadata ?? '').token_endpoint).toBe(oidcConfig.tokenURL);
     expect(JSON.parse(service.msalConfig.auth.authorityMetadata ?? '').userinfo_endpoint).toBe(oidcConfig.userInfoURL);
+  });
+
+  it('should use the client secret when the client authentication method is omitted', () => {
+    oidcConfig.clientId = 'test-client-id';
+    oidcConfig.clientSecret = 'test-client-secret';
+    oidcConfig.clientAuthMethod = undefined;
+    (service as any)._msalConfig = undefined;
+
+    const auth = service.msalConfig.auth;
+
+    expect(auth.clientId).toBe('test-client-id');
+    expect(auth.clientSecret).toBe('test-client-secret');
+    expect(auth.clientAssertion).toBeUndefined();
+  });
+
+  it('should sign a fresh RS256 client assertion with the required claims and no client secret', async () => {
+    const clientId = 'test-client-id';
+    const tokenEndpoint = 'https://issuer.example.com/token';
+    oidcConfig.clientId = clientId;
+    oidcConfig.clientSecret = 'must-not-be-used';
+    oidcConfig.clientAuthMethod = 'private_key_jwt';
+    oidcConfig.clientPrivateKey = privateKeyPem;
+    oidcConfig.clientPrivateKeyJwtAlgorithm = 'RS256';
+    (service as any)._msalConfig = undefined;
+
+    const auth = service.msalConfig.auth;
+    expect(auth.clientSecret).toBeUndefined();
+    expect(typeof auth.clientAssertion).toBe('function');
+    if (typeof auth.clientAssertion !== 'function') {
+      throw new Error('Expected MSAL clientAssertion callback');
+    }
+
+    const callbackInput = { clientId, tokenEndpoint };
+    const firstAssertion = await auth.clientAssertion(callbackInput);
+    const secondAssertion = await auth.clientAssertion(callbackInput);
+    const firstDecoded = decode(firstAssertion, { complete: true });
+    const firstClaims = verify(firstAssertion, publicKeyPem, {
+      algorithms: ['RS256'],
+      audience: tokenEndpoint,
+      issuer: clientId,
+      subject: clientId,
+    }) as JwtPayload;
+    const secondClaims = verify(secondAssertion, publicKeyPem, {
+      algorithms: ['RS256'],
+      audience: tokenEndpoint,
+      issuer: clientId,
+      subject: clientId,
+    }) as JwtPayload;
+
+    expect(firstDecoded && typeof firstDecoded !== 'string' ? firstDecoded.header.alg : undefined).toBe('RS256');
+    expect(firstClaims.iss).toBe(clientId);
+    expect(firstClaims.sub).toBe(clientId);
+    expect(firstClaims.aud).toBe(tokenEndpoint);
+    expect(firstClaims.iat).toEqual(expect.any(Number));
+    expect(firstClaims.exp).toBe((firstClaims.iat as number) + 60);
+    expect(firstClaims.jti).toEqual(expect.any(String));
+    expect(secondClaims.jti).not.toBe(firstClaims.jti);
+    expect(secondAssertion).not.toBe(firstAssertion);
+  });
+
+  it('should fail closed when a private-key JWT assertion has no token endpoint', async () => {
+    oidcConfig.clientAuthMethod = 'private_key_jwt';
+    oidcConfig.clientPrivateKey = privateKeyPem;
+    (service as any)._msalConfig = undefined;
+
+    const assertion = service.msalConfig.auth.clientAssertion;
+    expect(typeof assertion).toBe('function');
+    if (typeof assertion !== 'function') {
+      throw new Error('Expected MSAL clientAssertion callback');
+    }
+
+    await expect(assertion({ clientId: 'test-client-id' })).rejects.toThrow(
+      'FXN_OIDC_PRIVATE_KEY and the OIDC token endpoint are required for private_key_jwt',
+    );
   });
 
   it('should initialize the msalConfig networkClient', () => {

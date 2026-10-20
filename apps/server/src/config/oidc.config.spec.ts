@@ -19,6 +19,9 @@ describe('oidcConfigFactory', () => {
     delete process.env.FXN_OIDC_AUTH_URL;
     delete process.env.FXN_OIDC_CLIENT_ID;
     delete process.env.FXN_OIDC_CLIENT_SECRET;
+    delete process.env.FXN_OIDC_CLIENT_AUTH_METHOD;
+    delete process.env.FXN_OIDC_PRIVATE_KEY;
+    delete process.env.FXN_OIDC_PRIVATE_KEY_JWT_ALGORITHM;
     delete process.env.FXN_PUBLIC_URL;
     delete process.env.FXN_OIDC_ISSUER;
     delete process.env.FXN_OIDC_SCOPE;
@@ -32,6 +35,9 @@ describe('oidcConfigFactory', () => {
       callbackURL: expect.stringContaining('/callback'),
       clientId: undefined,
       clientSecret: undefined,
+      clientAuthMethod: 'client_secret',
+      clientPrivateKey: undefined,
+      clientPrivateKeyJwtAlgorithm: 'RS256',
       issuer: undefined,
       knownAuthorities: [],
       scopes: ['openid', 'profile', 'email', 'offline_access'],
@@ -47,6 +53,7 @@ describe('oidcConfigFactory', () => {
   });
 
   it('uses FXN_OIDC_AUTHORITY for authority and knownAuthorities', async () => {
+    delete process.env.FXN_OIDC_KNOWN_AUTHORITIES;
     process.env.FXN_OIDC_AUTHORITY = 'https://auth.example.com';
     const config = await oidcConfigFactory();
     expect(config.authority).toBe('https://auth.example.com');
@@ -87,5 +94,17 @@ describe('oidcConfigFactory', () => {
       clientId: 'test-client-id',
       clientSecret: 'test-client-secret',
     });
+  });
+
+  it('maps private_key_jwt settings and normalizes private key newlines', async () => {
+    process.env.FXN_OIDC_CLIENT_AUTH_METHOD = 'private_key_jwt';
+    process.env.FXN_OIDC_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----\\nkey-data\r\n-----END PRIVATE KEY-----';
+    process.env.FXN_OIDC_PRIVATE_KEY_JWT_ALGORITHM = 'RS256';
+
+    const config = await oidcConfigFactory();
+
+    expect(config.clientAuthMethod).toBe('private_key_jwt');
+    expect(config.clientPrivateKey).toBe('-----BEGIN PRIVATE KEY-----\nkey-data\n-----END PRIVATE KEY-----');
+    expect(config.clientPrivateKeyJwtAlgorithm).toBe('RS256');
   });
 });

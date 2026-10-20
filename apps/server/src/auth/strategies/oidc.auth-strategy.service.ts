@@ -11,6 +11,7 @@ import { decodeState, RequestState } from '../../context';
 import { formatFullName } from '../auth.util';
 import { compressString, decompressString } from '../../common/compress-string';
 import type { Request, Response } from 'express';
+import { createPrivateKeyJwtAssertion } from './private-key-jwt';
 
 @Injectable()
 export class OidcAuthStrategyService {
@@ -46,20 +47,40 @@ export class OidcAuthStrategyService {
   }
 
   private buildMsalConfig(): Configuration {
+    const auth: Configuration['auth'] = {
+      clientId: this.oidcConfig.clientId ?? '',
+      authority: this.oidcConfig.authority,
+      knownAuthorities: this.oidcConfig.knownAuthorities,
+      protocolMode: ProtocolMode.OIDC,
+      authorityMetadata: JSON.stringify({
+        authorization_endpoint: this.oidcConfig.authorizationURL,
+        token_endpoint: this.oidcConfig.tokenURL,
+        issuer: this.oidcConfig.issuer,
+        userinfo_endpoint: this.oidcConfig.userInfoURL,
+      }),
+    };
+
+    const clientAuthMethod = this.oidcConfig.clientAuthMethod ?? 'client_secret';
+
+    if (clientAuthMethod === 'private_key_jwt') {
+      const privateKey = this.oidcConfig.clientPrivateKey;
+
+      if (!privateKey) {
+        throw new Error('FXN_OIDC_PRIVATE_KEY is required for private_key_jwt');
+      }
+
+      auth.clientAssertion = createPrivateKeyJwtAssertion({
+        privateKey,
+        algorithm: this.oidcConfig.clientPrivateKeyJwtAlgorithm ?? 'RS256',
+      });
+    } else if (clientAuthMethod === 'client_secret') {
+      auth.clientSecret = this.oidcConfig.clientSecret;
+    } else {
+      throw new Error('Unsupported OIDC client authentication method');
+    }
+
     return {
-      auth: {
-        clientId: this.oidcConfig.clientId ?? '',
-        clientSecret: this.oidcConfig.clientSecret,
-        authority: this.oidcConfig.authority,
-        knownAuthorities: this.oidcConfig.knownAuthorities,
-        protocolMode: ProtocolMode.OIDC,
-        authorityMetadata: JSON.stringify({
-          authorization_endpoint: this.oidcConfig.authorizationURL,
-          token_endpoint: this.oidcConfig.tokenURL,
-          issuer: this.oidcConfig.issuer,
-          userinfo_endpoint: this.oidcConfig.userInfoURL,
-        }),
-      },
+      auth,
       system: {
         networkClient: {
           sendGetRequestAsync: async (url: string) => {

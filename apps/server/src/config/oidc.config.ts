@@ -19,6 +19,10 @@ export const oidcConfigFactory = async (): Promise<OIDCConfig> => {
       process.env.FXN_PUBLIC_URL?.concat('/api/callback') ?? `http://localhost:${FLUXNOVA_PORT}/api/callback`,
     clientId: process.env.FXN_OIDC_CLIENT_ID, //pragma: allowlist-secret not secret
     clientSecret: process.env.FXN_OIDC_CLIENT_SECRET, //pragma: allowlist-secret not secret
+    clientAuthMethod: (process.env.FXN_OIDC_CLIENT_AUTH_METHOD ?? 'client_secret') as OIDCConfig['clientAuthMethod'],
+    clientPrivateKey: process.env.FXN_OIDC_PRIVATE_KEY?.replace(/\r\n/g, '\n').replace(/\\n/g, '\n'),
+    clientPrivateKeyJwtAlgorithm: (process.env.FXN_OIDC_PRIVATE_KEY_JWT_ALGORITHM ??
+      'RS256') as OIDCConfig['clientPrivateKeyJwtAlgorithm'],
     issuer: process.env.FXN_OIDC_ISSUER,
     knownAuthorities,
     scopes: process.env.FXN_OIDC_SCOPE?.split(',') ?? ['openid', 'profile', 'email', 'offline_access'],

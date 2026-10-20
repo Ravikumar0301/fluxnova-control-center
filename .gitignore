@@ -314,3 +314,5 @@ migrations.json
 .github/instructions/nx.instructions.md
 
 **/*.hcl
+
+/docker/keys/
